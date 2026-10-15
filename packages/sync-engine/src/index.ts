@@ -7,3 +7,6 @@ export * from './adapters/macos-adapter.js';
 export * from './adapters/linux-adapter.js';
 export * from './config-sync-manager.js';
 export * from './transfer-engine.js';
+export * from './network/relay-client-transport.js';
+export * from './network/lan-discovery.js';
+export * from './network/hybrid-router.js';

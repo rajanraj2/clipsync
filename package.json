@@ -4,9 +4,9 @@
   "private": true,
   "description": "Universal clipboard, synchronization and content sharing platform",
   "scripts": {
-    "build": "tsc -b packages/shared-types packages/protocol-schema packages/storage packages/sync-engine packages/api-client services/api",
+    "build": "tsc -b packages/shared-types packages/protocol-schema packages/storage services/relay packages/sync-engine packages/api-client services/api",
     "test": "bun test packages/*/tests services/*/tests",
-    "typecheck": "tsc -b packages/shared-types packages/protocol-schema packages/storage packages/sync-engine packages/api-client services/api && pnpm --filter @clipsync/web run typecheck"
+    "typecheck": "tsc -b packages/shared-types packages/protocol-schema packages/storage services/relay packages/sync-engine packages/api-client services/api && pnpm --filter @clipsync/web run typecheck"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",

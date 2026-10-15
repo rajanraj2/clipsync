@@ -191,6 +191,9 @@ importers:
       '@clipsync/protocol-schema':
         specifier: workspace:*
         version: link:../protocol-schema
+      '@clipsync/relay':
+        specifier: workspace:*
+        version: link:../../services/relay
       '@clipsync/shared-types':
         specifier: workspace:*
         version: link:../shared-types
@@ -213,6 +216,19 @@ importers:
       '@clipsync/storage':
         specifier: workspace:*
         version: link:../../packages/storage
+    devDependencies:
+      typescript:
+        specifier: ^5.8.2
+        version: 5.9.3
+
+  services/relay:
+    dependencies:
+      '@clipsync/protocol-schema':
+        specifier: workspace:*
+        version: link:../../packages/protocol-schema
+      '@clipsync/shared-types':
+        specifier: workspace:*
+        version: link:../../packages/shared-types
     devDependencies:
       typescript:
         specifier: ^5.8.2

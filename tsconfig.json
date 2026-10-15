@@ -16,7 +16,9 @@
     "paths": {
       "@clipsync/shared-types": ["packages/shared-types/src/index.ts"],
       "@clipsync/protocol-schema": ["packages/protocol-schema/src/index.ts"],
-      "@clipsync/storage": ["packages/storage/src/index.ts"]
+      "@clipsync/storage": ["packages/storage/src/index.ts"],
+      "@clipsync/api-client": ["packages/api-client/src/index.ts"],
+      "@clipsync/api": ["services/api/src/index.ts"]
     }
   }
 }

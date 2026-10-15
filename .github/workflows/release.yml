@@ -118,8 +118,7 @@ jobs:
       - name: Build Android APK
         working-directory: apps/android
         run: |
-          chmod +x ./gradlew || true
-          gradle wrapper
+          chmod +x ./gradlew
           ./gradlew assembleDebug --stacktrace
           mkdir -p ../../release-assets
           cp app/build/outputs/apk/debug/app-debug.apk ../../release-assets/ClipSync-Android.apk

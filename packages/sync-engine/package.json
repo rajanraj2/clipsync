@@ -18,7 +18,8 @@
   },
   "dependencies": {
     "@clipsync/protocol-schema": "workspace:*",
-    "@clipsync/shared-types": "workspace:*"
+    "@clipsync/shared-types": "workspace:*",
+    "@clipsync/storage": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.8.2"

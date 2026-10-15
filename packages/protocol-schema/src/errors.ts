@@ -31,3 +31,13 @@ export class SecurityPolicyViolationError extends ProtocolError {
     this.name = 'SecurityPolicyViolationError';
   }
 }
+
+export class ConcurrencyConflictError extends ProtocolError {
+  constructor(public readonly expectedVersion: number, public readonly currentVersion: number) {
+    super(
+      `Optimistic concurrency conflict: expected config version ${expectedVersion}, but current version is ${currentVersion}`,
+      'CONCURRENCY_CONFLICT'
+    );
+    this.name = 'ConcurrencyConflictError';
+  }
+}

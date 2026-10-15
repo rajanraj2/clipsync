@@ -216,10 +216,18 @@ export class ApiRouter {
 
       if (path === '/api/v1/settings' && method === 'PATCH') {
         const body = (await req.json()) as Record<string, unknown>;
-        for (const [key, value] of Object.entries(body)) {
-          this.ctx.settingsStore.setUserSetting(this.userId, key, value);
-        }
-        return this.json(this.ctx.settingsStore.getAllUserSettings(this.userId), 200, corsHeaders);
+        const expectedVersion = typeof body.expectedVersion === 'number' ? body.expectedVersion : undefined;
+        const settingsToUpdate =
+          body.settings && typeof body.settings === 'object'
+            ? (body.settings as Record<string, unknown>)
+            : body;
+
+        const result = this.ctx.settingsStore.updateUserSettingsBatch(
+          this.userId,
+          settingsToUpdate,
+          expectedVersion
+        );
+        return this.json(result, 200, corsHeaders);
       }
 
       const deviceSettingsMatch = path.match(/^\/api\/v1\/devices\/([^/]+)\/settings$/);

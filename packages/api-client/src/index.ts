@@ -125,10 +125,13 @@ export class ClipSyncApiClient {
   // --- Settings ---
   public readonly settings = {
     get: async (): Promise<Record<string, unknown>> => this.request<Record<string, unknown>>('/api/v1/settings'),
-    update: async (settings: Record<string, unknown>): Promise<Record<string, unknown>> =>
-      this.request<Record<string, unknown>>('/api/v1/settings', {
+    update: async (
+      settings: Record<string, unknown>,
+      expectedVersion?: number
+    ): Promise<{ version: number; settings: Record<string, unknown> }> =>
+      this.request<{ version: number; settings: Record<string, unknown> }>('/api/v1/settings', {
         method: 'PATCH',
-        body: JSON.stringify(settings),
+        body: JSON.stringify(expectedVersion !== undefined ? { settings, expectedVersion } : settings),
       }),
     getDefinitions: async (): Promise<SettingDefinition[]> =>
       this.request<SettingDefinition[]>('/api/v1/settings/definitions'),

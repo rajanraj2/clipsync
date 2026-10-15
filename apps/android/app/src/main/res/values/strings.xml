@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">ClipSync</string>
+    <string name="notification_channel_name">ClipSync Service</string>
+    <string name="notification_channel_desc">Active clipboard synchronization</string>
+    <string name="clipboard_service_title">ClipSync Active</string>
+    <string name="clipboard_service_desc">Synchronizing clipboard with paired devices</string>
+    <string name="share_to_clipsync">Send to ClipSync</string>
+</resources>

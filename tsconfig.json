@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2022",
+    "lib": ["ESNext", "DOM"],
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "declaration": true,
@@ -13,7 +14,8 @@
     "resolveJsonModule": true,
     "baseUrl": ".",
     "paths": {
-      "@clipsync/shared-types": ["packages/shared-types/src/index.ts"]
+      "@clipsync/shared-types": ["packages/shared-types/src/index.ts"],
+      "@clipsync/protocol-schema": ["packages/protocol-schema/src/index.ts"]
     }
   }
 }

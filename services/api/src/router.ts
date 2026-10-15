@@ -11,6 +11,7 @@ import {
 import { BlobStore, HistoryStore, SettingsStore } from '@clipsync/storage';
 import { DeviceRegistry } from './device-registry.js';
 import { TransferManager } from './transfer-manager.js';
+import { RateLimiter, SECURITY_HEADERS, validateFileMagicBytes } from './security.js';
 
 export interface ApiServerContext {
   historyStore: HistoryStore;
@@ -24,6 +25,7 @@ export interface ApiServerContext {
 export class ApiRouter {
   private isSyncPaused = false;
   private readonly userId: string;
+  public readonly rateLimiter = new RateLimiter({ maxRequests: 200, windowMs: 60_000 });
 
   constructor(private readonly ctx: ApiServerContext) {
     this.userId = ctx.defaultUserId ?? 'default-user';
@@ -34,15 +36,27 @@ export class ApiRouter {
     const path = url.pathname;
     const method = req.method.toUpperCase();
 
-    // CORS headers for Web App dashboard
+    // Security & CORS headers
     const corsHeaders = {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      ...SECURITY_HEADERS,
     };
 
     if (method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: corsHeaders });
+    }
+
+    // Rate limiting defense
+    const clientId = req.headers.get('x-forwarded-for') ?? req.headers.get('host') ?? '127.0.0.1';
+    const rateCheck = this.rateLimiter.check(clientId);
+    if (!rateCheck.allowed) {
+      return this.json(
+        { error: 'Too Many Requests: rate limit exceeded' },
+        429,
+        { ...corsHeaders, 'Retry-After': String(Math.ceil(rateCheck.resetInMs / 1000)) }
+      );
     }
 
     try {
@@ -329,10 +343,13 @@ export class ApiRouter {
         const arrayBuf = await req.arrayBuffer();
         const buffer = Buffer.from(arrayBuf);
 
+        if (!validateFileMagicBytes(buffer, mimeType)) {
+          return this.json({ error: `File signature mismatch for declared MIME type ${mimeType}` }, 400, corsHeaders);
+        }
+
         const meta = this.ctx.blobStore.saveBlob(buffer, mimeType, fileName);
         return this.json(meta, 201, corsHeaders);
       }
-
       const blobHashMatch = path.match(/^\/api\/v1\/blobs\/([a-f0-9]{64})$/);
       if (blobHashMatch) {
         const hash = blobHashMatch[1];

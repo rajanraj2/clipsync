@@ -50,3 +50,5 @@ docs/
 # Build output
 dist/
 *.tsbuildinfo
+release-distribution/
+release-assets/

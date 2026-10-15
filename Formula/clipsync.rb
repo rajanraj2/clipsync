@@ -1,8 +1,8 @@
 class Clipsync < Formula
   desc "Universal clipboard, synchronization and content sharing CLI"
   homepage "https://github.com/rajanraj2/clipsync"
-  url "https://github.com/rajanraj2/clipsync/releases/download/v0.1.0/clipsync-cli-0.1.0.tar.gz"
-  sha256 "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" # Updated on release
+  url "https://github.com/rajanraj2/clipsync/releases/download/v0.1.0/clipsync-cli-0.1.0.tgz"
+  sha256 "d039046b38620db1e4f790b717b17f688923d6cd6058993d245b52c2cfd65436"
   license "MIT"
   head "https://github.com/rajanraj2/clipsync.git", branch: "main"
 

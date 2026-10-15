@@ -157,6 +157,28 @@ importers:
         specifier: ^5.8.2
         version: 5.9.3
 
+  packages/cli:
+    dependencies:
+      '@clipsync/api-client':
+        specifier: workspace:*
+        version: link:../api-client
+      '@clipsync/protocol-schema':
+        specifier: workspace:*
+        version: link:../protocol-schema
+      '@clipsync/shared-types':
+        specifier: workspace:*
+        version: link:../shared-types
+      '@clipsync/storage':
+        specifier: workspace:*
+        version: link:../storage
+      '@clipsync/sync-engine':
+        specifier: workspace:*
+        version: link:../sync-engine
+    devDependencies:
+      typescript:
+        specifier: ^5.8.2
+        version: 5.9.3
+
   packages/protocol-schema:
     dependencies:
       '@clipsync/shared-types':

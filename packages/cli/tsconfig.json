@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "outDir": "./dist",
+    "rootDir": "./src"
+  },
+  "references": [
+    { "path": "../shared-types" },
+    { "path": "../protocol-schema" },
+    { "path": "../storage" },
+    { "path": "../sync-engine" },
+    { "path": "../api-client" }
+  ],
+  "include": ["src/**/*"]
+}

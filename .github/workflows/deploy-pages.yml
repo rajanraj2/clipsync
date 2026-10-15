@@ -1,0 +1,88 @@
+name: Deploy Web Application to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/web/**'
+      - 'packages/**'
+      - 'services/**'
+      - '.github/workflows/deploy-pages.yml'
+  workflow_dispatch:
+    inputs:
+      custom_domain:
+        description: 'Optional custom domain (e.g. clipsync.dev)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: 'pages'
+  cancel-in-progress: true
+
+jobs:
+  deploy_pages:
+    name: Build & Deploy to GitHub Pages
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 12.3.4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build Monorepo Packages
+        run: pnpm run build
+
+      - name: Setup GitHub Pages Environment
+        id: pages
+        uses: actions/configure-pages@v4
+
+      - name: Build & Export Next.js Web Application
+        env:
+          NEXT_PUBLIC_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+        run: pnpm --filter @clipsync/web run build
+
+      - name: Configure Custom Domain & Jekyll Bypass
+        run: |
+          # Prevent Jekyll from ignoring _next directories
+          touch apps/web/out/.nojekyll
+
+          # Handle Custom Domain if provided
+          CUSTOM_DOMAIN="${{ github.event.inputs.custom_domain }}"
+          if [ -n "$CUSTOM_DOMAIN" ]; then
+            echo "$CUSTOM_DOMAIN" > apps/web/out/CNAME
+          elif [ -f apps/web/public/CNAME ]; then
+            cp apps/web/public/CNAME apps/web/out/CNAME
+          fi
+
+      - name: Upload GitHub Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'apps/web/out'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,264 @@
+name: Multi-Channel Release & Deployment
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Version tag (e.g. v0.1.0)'
+        required: false
+        default: 'v0.1.0'
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: 'release'
+  cancel-in-progress: false
+
+jobs:
+  compute_version:
+    name: Compute Release Version
+    runs-on: ubuntu-latest
+    outputs:
+      tag_name: ${{ steps.version.outputs.tag_name }}
+      clean_version: ${{ steps.version.outputs.clean_version }}
+    steps:
+      - name: Compute Version Tag
+        id: version
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            TAG="${{ github.event.inputs.tag }}"
+          else
+            TAG="${GITHUB_REF#refs/tags/}"
+          fi
+          TAG="${TAG:-v0.1.0}"
+          CLEAN="${TAG#v}"
+          echo "tag_name=$TAG" >> $GITHUB_OUTPUT
+          echo "clean_version=$CLEAN" >> $GITHUB_OUTPUT
+
+  build_web_pages:
+    name: Build & Deploy Web Version to GitHub Pages
+    needs: [compute_version]
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 12.3.4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build Packages
+        run: pnpm run build
+
+      - name: Setup GitHub Pages Environment
+        id: pages
+        uses: actions/configure-pages@v4
+
+      - name: Build & Export Next.js Web App
+        env:
+          NEXT_PUBLIC_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+        run: pnpm --filter @clipsync/web run build
+
+      - name: Configure Jekyll Bypass & Custom Domain
+        run: |
+          touch apps/web/out/.nojekyll
+          if [ -f apps/web/public/CNAME ]; then
+            cp apps/web/public/CNAME apps/web/out/CNAME
+          fi
+
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'apps/web/out'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  build_android:
+    name: Build Android APK
+    needs: [compute_version]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build Android APK
+        working-directory: apps/android
+        run: |
+          chmod +x ./gradlew || true
+          gradle wrapper
+          ./gradlew assembleDebug --stacktrace
+          mkdir -p ../../release-assets
+          cp app/build/outputs/apk/debug/app-debug.apk ../../release-assets/ClipSync-Android.apk
+
+      - name: Upload Android APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: clipsync-android-apk
+          path: release-assets/ClipSync-Android.apk
+
+  build_macos_dmg:
+    name: Package macOS Application (.dmg)
+    needs: [compute_version]
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 12.3.4
+
+      - name: Install Dependencies & Build Packages
+        run: |
+          pnpm install --no-frozen-lockfile
+          pnpm run build
+
+      - name: Package macOS DMG
+        run: |
+          mkdir -p dmg-source release-assets
+          # Create macOS App bundle structure
+          mkdir -p dmg-source/ClipSync.app/Contents/MacOS
+          mkdir -p dmg-source/ClipSync.app/Contents/Resources
+          
+          # Copy executables and resources
+          cp packages/cli/bin/clipsync.js dmg-source/ClipSync.app/Contents/MacOS/ClipSync
+          chmod +x dmg-source/ClipSync.app/Contents/MacOS/ClipSync
+          cp apps/web/public/icon.svg dmg-source/ClipSync.app/Contents/Resources/
+          
+          cat << 'EOF' > dmg-source/ClipSync.app/Contents/Info.plist
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>CFBundleExecutable</key>
+              <string>ClipSync</string>
+              <key>CFBundleIdentifier</key>
+              <string>dev.clipsync.desktop</string>
+              <key>CFBundleName</key>
+              <string>ClipSync</string>
+              <key>CFBundlePackageType</key>
+              <string>APPL</string>
+              <key>CFBundleShortVersionString</key>
+              <string>${{ needs.compute_version.outputs.clean_version }}</string>
+          </dict>
+          </plist>
+          EOF
+
+          # Create DMG
+          hdiutil create -volname "ClipSync" -srcfolder dmg-source -ov -format UDZO release-assets/ClipSync-macOS.dmg
+
+      - name: Upload macOS DMG Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: clipsync-macos-dmg
+          path: release-assets/ClipSync-macOS.dmg
+
+  build_npm_packages:
+    name: Build & Package NPM Modules
+    needs: [compute_version]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 12.3.4
+
+      - name: Install Dependencies & Build
+        run: |
+          pnpm install --no-frozen-lockfile
+          pnpm run build
+
+      - name: Pack NPM Tarballs
+        run: |
+          mkdir -p release-assets
+          cd packages/cli && pnpm pack --pack-destination ../../release-assets && cd ../..
+          cd packages/api-client && pnpm pack --pack-destination ../../release-assets && cd ../..
+          cd packages/protocol-schema && pnpm pack --pack-destination ../../release-assets && cd ../..
+
+      - name: Upload NPM Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: clipsync-npm-packages
+          path: release-assets/*.tgz
+
+  publish_release:
+    name: Publish Official Multi-Channel Release
+    needs: [compute_version, build_web_pages, build_android, build_macos_dmg, build_npm_packages]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download All Release Artifacts
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          path: all-assets
+
+      - name: Consolidate Release Files
+        run: |
+          mkdir -p release-distribution
+          find all-assets -type f -name "*.apk" -exec cp {} release-distribution/ClipSync-Android.apk \; || true
+          find all-assets -type f -name "*.dmg" -exec cp {} release-distribution/ClipSync-macOS.dmg \; || true
+          find all-assets -type f -name "*.tgz" -exec cp {} release-distribution/ \; || true
+          cp Formula/clipsync.rb release-distribution/ || true
+
+      - name: Create GitHub Release with Binary Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.compute_version.outputs.tag_name }}
+          name: ClipSync ${{ needs.compute_version.outputs.tag_name }}
+          files: release-distribution/*
+          draft: false
+          prerelease: false
+          generate_release_notes: true

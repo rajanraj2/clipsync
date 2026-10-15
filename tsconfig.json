@@ -19,7 +19,8 @@
       "@clipsync/storage": ["packages/storage/src/index.ts"],
       "@clipsync/api-client": ["packages/api-client/src/index.ts"],
       "@clipsync/api": ["services/api/src/index.ts"],
-      "@clipsync/relay": ["services/relay/src/index.ts"]
+      "@clipsync/relay": ["services/relay/src/index.ts"],
+      "@clipsync/cli": ["packages/cli/src/index.ts"]
     }
   }
 }

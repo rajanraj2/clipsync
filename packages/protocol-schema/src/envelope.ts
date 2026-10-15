@@ -26,8 +26,8 @@ const VALID_MESSAGE_TYPES: Record<MessageType, true> = {
   error: true,
 };
 
-export interface CreateMessageOptions<T> {
-  type: MessageType;
+export interface CreateMessageOptions<T, K extends MessageType = MessageType> {
+  type: K;
   senderDeviceId: string;
   targetDeviceId?: string | null;
   payload: T;
@@ -36,7 +36,9 @@ export interface CreateMessageOptions<T> {
   signature?: string;
 }
 
-export function createProtocolMessage<T>(options: CreateMessageOptions<T>): BaseProtocolMessage<T> {
+export function createProtocolMessage<T, K extends MessageType = MessageType>(
+  options: CreateMessageOptions<T, K>
+): BaseProtocolMessage<T> & { type: K } {
   if (!options.senderDeviceId || options.senderDeviceId.trim().length === 0) {
     throw new ValidationError('senderDeviceId is required and cannot be empty', 'senderDeviceId');
   }

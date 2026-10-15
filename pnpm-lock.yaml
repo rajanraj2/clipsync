@@ -132,6 +132,19 @@ importers:
         specifier: ^5.8.2
         version: 5.9.3
 
+  packages/storage:
+    dependencies:
+      '@clipsync/protocol-schema':
+        specifier: workspace:*
+        version: link:../protocol-schema
+      '@clipsync/shared-types':
+        specifier: workspace:*
+        version: link:../shared-types
+    devDependencies:
+      typescript:
+        specifier: ^5.8.2
+        version: 5.9.3
+
   packages/sync-engine:
     dependencies:
       '@clipsync/protocol-schema':

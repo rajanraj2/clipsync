@@ -48,6 +48,7 @@ export default function RootLayout({
               <a href="/devices" style={{ padding: '10px 14px', borderRadius: '8px', color: '#cbd5e1', textDecoration: 'none', fontSize: '14px' }}>Devices</a>
               <a href="/transfers" style={{ padding: '10px 14px', borderRadius: '8px', color: '#cbd5e1', textDecoration: 'none', fontSize: '14px' }}>Quick Share</a>
               <a href="/settings" style={{ padding: '10px 14px', borderRadius: '8px', color: '#cbd5e1', textDecoration: 'none', fontSize: '14px' }}>Settings</a>
+              <a href="/downloads" style={{ padding: '10px 14px', borderRadius: '8px', color: '#38bdf8', textDecoration: 'none', fontSize: '14px', fontWeight: 600 }}>Downloads & Channels</a>
             </nav>
             <div style={{ marginTop: 'auto', padding: '12px', background: '#0f172a', borderRadius: '8px', border: '1px solid #334155', fontSize: '12px', color: '#94a3b8' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>

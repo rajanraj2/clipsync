@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "outDir": "./dist",
+    "rootDir": "./src"
+  },
+  "references": [
+    { "path": "../../packages/shared-types" },
+    { "path": "../../packages/protocol-schema" },
+    { "path": "../../packages/storage" }
+  ],
+  "include": ["src/**/*"]
+}

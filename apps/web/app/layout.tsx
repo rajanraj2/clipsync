@@ -4,6 +4,11 @@ import React from 'react';
 export const metadata: Metadata = {
   title: 'ClipSync — Universal Clipboard Dashboard',
   description: 'Copy anywhere. Access everywhere. Stay in control.',
+  manifest: '/manifest.json',
+  icons: {
+    icon: '/icon.svg',
+    apple: '/icon.svg',
+  },
 };
 
 export default function RootLayout({
@@ -13,6 +18,22 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#0284c7" />
+        <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                  navigator.serviceWorker.register('/sw.js').catch(() => {});
+                });
+              }
+            `,
+          }}
+        />
+      </head>
       <body style={{ margin: 0, fontFamily: 'system-ui, -apple-system, sans-serif', background: '#0f172a', color: '#f8fafc' }}>
         <div style={{ display: 'flex', minHeight: '100vh' }}>
           {/* Sidebar */}
@@ -31,9 +52,9 @@ export default function RootLayout({
             <div style={{ marginTop: 'auto', padding: '12px', background: '#0f172a', borderRadius: '8px', border: '1px solid #334155', fontSize: '12px', color: '#94a3b8' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                 <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22c55e', display: 'inline-block' }} />
-                <span style={{ color: '#f8fafc', fontWeight: 600 }}>Web Client Active</span>
+                <span style={{ color: '#f8fafc', fontWeight: 600 }}>PWA Active</span>
               </div>
-              <span>Protocol v2.0 • Local-First</span>
+              <span>Protocol v2.0 • Offline Ready</span>
             </div>
           </aside>
 

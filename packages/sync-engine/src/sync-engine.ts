@@ -19,6 +19,7 @@ import {
 } from './types.js';
 import { EchoSuppressor } from './echo-suppressor.js';
 import { inspectSensitiveContent } from './sensitive-filter.js';
+import type { ConfigSyncManager } from './config-sync-manager.js';
 
 export class SyncEngine {
   private readonly localDevice: DeviceMetadata;
@@ -26,6 +27,7 @@ export class SyncEngine {
   private readonly transport: SyncTransport;
   private readonly echoSuppressor: EchoSuppressor;
   private readonly eventHandlers: SyncEngineEventHandler;
+  private readonly configSyncManager?: ConfigSyncManager;
   private userPreferences: Record<string, unknown>;
   private deviceOverrides: Record<string, unknown>;
   private isRunning = false;
@@ -45,6 +47,12 @@ export class SyncEngine {
     this.deviceOverrides = { ...(config.deviceOverrides ?? {}) };
     this.echoSuppressor = new EchoSuppressor(config.echoSuppressionWindowMs ?? 3000);
     this.eventHandlers = handlers;
+    this.configSyncManager = config.configSyncManager;
+    if (this.configSyncManager) {
+      this.configSyncManager.subscribe((newPrefs) => {
+        this.updatePreferences(newPrefs);
+      });
+    }
   }
 
   public start(): void {
@@ -203,6 +211,8 @@ export class SyncEngine {
 
     if (message.type === 'clipboard_sync') {
       await this.processInboundClipboardSync(message);
+    } else if (message.type === 'config_sync') {
+      await this.configSyncManager?.handleInboundConfigSync(message);
     }
   }
 

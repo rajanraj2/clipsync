@@ -3,7 +3,8 @@ import {
   HistoryPolicy,
   UserSetting,
 } from '@clipsync/shared-types';
-import { validateHistoryPolicy } from '@clipsync/protocol-schema';
+import { ConcurrencyConflictError, validateHistoryPolicy } from '@clipsync/protocol-schema';
+import { INIT_SCHEMA_SQL } from './schema.js';
 import { SqliteDriver } from './types.js';
 
 interface RawHistoryPolicyRow {
@@ -17,7 +18,13 @@ interface RawHistoryPolicyRow {
 }
 
 export class SettingsStore {
-  constructor(private readonly driver: SqliteDriver) {}
+  constructor(private readonly driver: SqliteDriver) {
+    this.initialize();
+  }
+
+  public initialize(): void {
+    this.driver.exec(INIT_SCHEMA_SQL);
+  }
 
   public getUserSetting(userId: string, key: string): UserSetting | null {
     const row = this.driver.get<{
@@ -82,6 +89,45 @@ export class SettingsStore {
       }
     }
     return result;
+  }
+
+  public getConfigVersion(userId: string): number {
+    const row = this.getUserSetting(userId, '_meta.config_version');
+    if (row && typeof row.settingValue === 'number') {
+      return row.settingValue;
+    }
+    return 1;
+  }
+
+  public incrementConfigVersion(userId: string): number {
+    const next = this.getConfigVersion(userId) + 1;
+    this.setUserSetting(userId, '_meta.config_version', next);
+    return next;
+  }
+
+  public updateUserSettingsBatch(
+    userId: string,
+    settings: Record<string, unknown>,
+    expectedVersion?: number
+  ): { version: number; settings: Record<string, unknown> } {
+    const currentVersion = this.getConfigVersion(userId);
+    if (expectedVersion !== undefined && expectedVersion !== currentVersion) {
+      throw new ConcurrencyConflictError(expectedVersion, currentVersion);
+    }
+
+    for (const [key, val] of Object.entries(settings)) {
+      if (key !== '_meta.config_version') {
+        this.setUserSetting(userId, key, val);
+      }
+    }
+
+    const newVersion = currentVersion + 1;
+    this.setUserSetting(userId, '_meta.config_version', newVersion);
+
+    return {
+      version: newVersion,
+      settings: this.getAllUserSettings(userId),
+    };
   }
 
   public getDeviceSetting(deviceId: string, key: string): DeviceSetting | null {

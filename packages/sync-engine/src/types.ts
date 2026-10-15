@@ -4,6 +4,7 @@ import type {
   DeviceMetadata,
   ProtocolMessage,
 } from '@clipsync/shared-types';
+import type { ConfigSyncManager } from './config-sync-manager.js';
 
 export interface RawClipboardData {
   content: string;
@@ -33,7 +34,7 @@ export interface SyncEngineConfig {
   localDevice: DeviceMetadata;
   userPreferences?: Record<string, unknown>;
   deviceOverrides?: Record<string, unknown>;
-  /** Window in ms to suppress re-broadcasting clipboard writes performed by sync engine (default 3000ms) */
+  configSyncManager?: ConfigSyncManager;
   echoSuppressionWindowMs?: number;
   /** Debounce time in ms before processing rapid clipboard changes (default 250ms) */
   debounceMs?: number;

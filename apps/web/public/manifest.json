@@ -1,0 +1,46 @@
+{
+  "name": "ClipSync — Universal Clipboard",
+  "short_name": "ClipSync",
+  "description": "Universal clipboard, synchronization and content sharing ecosystem",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0f172a",
+  "theme_color": "#0284c7",
+  "categories": ["utilities", "productivity"],
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Quick Share",
+      "url": "/transfers",
+      "description": "Dispatch text or files to connected devices"
+    },
+    {
+      "name": "Clipboard History",
+      "url": "/history",
+      "description": "Browse synchronized clipboard items"
+    },
+    {
+      "name": "Paired Devices",
+      "url": "/devices",
+      "description": "Manage connected agents"
+    }
+  ]
+}

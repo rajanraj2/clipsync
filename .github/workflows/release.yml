@@ -41,63 +41,6 @@ jobs:
           echo "tag_name=$TAG" >> $GITHUB_OUTPUT
           echo "clean_version=$CLEAN" >> $GITHUB_OUTPUT
 
-  build_web_pages:
-    name: Build & Deploy Web Version to GitHub Pages
-    needs: [compute_version]
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 12.3.4
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - name: Install Dependencies
-        run: pnpm install --no-frozen-lockfile
-
-      - name: Build Packages
-        run: pnpm run build
-
-      - name: Setup GitHub Pages Environment
-        id: pages
-        uses: actions/configure-pages@v4
-
-      - name: Build & Export Next.js Web App
-        env:
-          NEXT_PUBLIC_BASE_PATH: ${{ steps.pages.outputs.base_path }}
-        run: pnpm --filter @clipsync/web run build
-
-      - name: Configure Jekyll Bypass & Custom Domain
-        run: |
-          touch apps/web/out/.nojekyll
-          if [ -f apps/web/public/CNAME ]; then
-            cp apps/web/public/CNAME apps/web/out/CNAME
-          fi
-
-      - name: Upload Pages Artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: 'apps/web/out'
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-
   build_android:
     name: Build Android APK
     needs: [compute_version]
@@ -231,8 +174,8 @@ jobs:
 
   publish_release:
     name: Publish Official Multi-Channel Release
-    needs: [compute_version, build_web_pages, build_android, build_macos_dmg, build_npm_packages]
-    if: always()
+    needs: [compute_version, build_android, build_macos_dmg, build_npm_packages]
+    if: always() && needs.compute_version.outputs.tag_name != ''
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code

@@ -182,6 +182,41 @@ export class ClipSyncApiClient {
       }),
   };
 
+  // --- Blobs (Images & Binary Files) ---
+  public readonly blobs = {
+    list: async (): Promise<Array<{ hash: string; mimeType: string; fileName?: string; sizeBytes: number; createdAt: number }>> =>
+      this.request('/api/v1/blobs'),
+    upload: async (
+      data: Blob | ArrayBuffer | Uint8Array,
+      mimeType: string,
+      fileName?: string
+    ): Promise<{ hash: string; mimeType: string; fileName?: string; sizeBytes: number; createdAt: number }> => {
+      const qs = fileName ? `?filename=${encodeURIComponent(fileName)}` : '';
+      const res = await fetch(`${this.baseUrl}/api/v1/blobs${qs}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': mimeType,
+        },
+        body: data instanceof Uint8Array ? (data.buffer as ArrayBuffer) : data,
+      });
+      if (!res.ok) {
+        throw new Error(`Blob upload failed: ${res.statusText}`);
+      }
+      return (await res.json()) as { hash: string; mimeType: string; fileName?: string; sizeBytes: number; createdAt: number };
+    },
+    download: async (hash: string): Promise<ArrayBuffer> => {
+      const res = await fetch(`${this.baseUrl}/api/v1/blobs/${hash}`);
+      if (!res.ok) {
+        throw new Error(`Blob download failed: ${res.statusText}`);
+      }
+      return res.arrayBuffer();
+    },
+    delete: async (hash: string): Promise<{ success: boolean }> =>
+      this.request<{ success: boolean }>(`/api/v1/blobs/${hash}`, {
+        method: 'DELETE',
+      }),
+  };
+
   private async request<T>(path: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseUrl}${path}`;
     const headers = {

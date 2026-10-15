@@ -155,4 +155,23 @@ describe('ClipSync API Service & Client SDK', () => {
     const cancelled = await client.transfers.cancel(transfer.id);
     expect(cancelled.status).toBe('cancelled');
   });
+
+  it('manages binary blobs upload, retrieval, and deletion', async () => {
+    const sampleBlob = Buffer.from('Binary image or file data for ClipSync');
+    const uploaded = await client.blobs.upload(sampleBlob, 'text/plain', 'notes.txt');
+
+    expect(uploaded.hash).toBeDefined();
+    expect(uploaded.mimeType).toBe('text/plain');
+    expect(uploaded.fileName).toBe('notes.txt');
+    expect(uploaded.sizeBytes).toBe(sampleBlob.length);
+
+    const list = await client.blobs.list();
+    expect(list.some((b) => b.hash === uploaded.hash)).toBe(true);
+
+    const downloadedBuffer = await client.blobs.download(uploaded.hash);
+    expect(Buffer.from(downloadedBuffer)).toEqual(sampleBlob);
+
+    const deleted = await client.blobs.delete(uploaded.hash);
+    expect(deleted.success).toBe(true);
+  });
 });

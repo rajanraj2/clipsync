@@ -1,5 +1,5 @@
 import { createServer, Server as HttpServer } from 'node:http';
-import { HistoryStore, NodeSqliteDriver, SettingsStore } from '@clipsync/storage';
+import { BlobStore, HistoryStore, NodeSqliteDriver, SettingsStore } from '@clipsync/storage';
 import { DeviceRegistry } from './device-registry.js';
 import { TransferManager } from './transfer-manager.js';
 import { ApiRouter, ApiServerContext } from './router.js';
@@ -24,12 +24,13 @@ export class ClipSyncApiServer {
     const settingsStore = options.context?.settingsStore ?? new SettingsStore(driver);
     const deviceRegistry = options.context?.deviceRegistry ?? new DeviceRegistry();
     const transferManager = options.context?.transferManager ?? new TransferManager();
-
+    const blobStore = options.context?.blobStore ?? new BlobStore(driver);
     this.context = {
       historyStore,
       settingsStore,
       deviceRegistry,
       transferManager,
+      blobStore,
       defaultUserId: options.context?.defaultUserId ?? 'default-user',
     };
 

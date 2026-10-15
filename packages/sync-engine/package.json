@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@clipsync/protocol-schema": "workspace:*",
+    "@clipsync/relay": "workspace:*",
     "@clipsync/shared-types": "workspace:*",
     "@clipsync/storage": "workspace:*"
   },

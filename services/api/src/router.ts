@@ -8,7 +8,7 @@ import {
   normalizeContent,
   SETTING_DEFINITIONS,
 } from '@clipsync/protocol-schema';
-import { HistoryStore, SettingsStore } from '@clipsync/storage';
+import { BlobStore, HistoryStore, SettingsStore } from '@clipsync/storage';
 import { DeviceRegistry } from './device-registry.js';
 import { TransferManager } from './transfer-manager.js';
 
@@ -17,6 +17,7 @@ export interface ApiServerContext {
   settingsStore: SettingsStore;
   deviceRegistry: DeviceRegistry;
   transferManager: TransferManager;
+  blobStore: BlobStore;
   defaultUserId?: string;
 }
 
@@ -317,7 +318,44 @@ export class ApiRouter {
         const cancelled = this.ctx.transferManager.cancelTransfer(transferCancelMatch[1]);
         return cancelled ? this.json(cancelled, 200, corsHeaders) : this.notFound('Transfer not found', corsHeaders);
       }
+      // 7. Binary Blobs (Images & Files)
+      if (path === '/api/v1/blobs' && method === 'GET') {
+        return this.json(this.ctx.blobStore.listBlobs(), 200, corsHeaders);
+      }
 
+      if (path === '/api/v1/blobs' && method === 'POST') {
+        const mimeType = req.headers.get('content-type') ?? 'application/octet-stream';
+        const fileName = url.searchParams.get('filename') ?? undefined;
+        const arrayBuf = await req.arrayBuffer();
+        const buffer = Buffer.from(arrayBuf);
+
+        const meta = this.ctx.blobStore.saveBlob(buffer, mimeType, fileName);
+        return this.json(meta, 201, corsHeaders);
+      }
+
+      const blobHashMatch = path.match(/^\/api\/v1\/blobs\/([a-f0-9]{64})$/);
+      if (blobHashMatch) {
+        const hash = blobHashMatch[1];
+        if (method === 'GET') {
+          const stored = this.ctx.blobStore.getBlob(hash);
+          if (!stored) {
+            return this.notFound('Blob not found', corsHeaders);
+          }
+          return new Response(new Uint8Array(stored.data), {
+            status: 200,
+            headers: {
+              'Content-Type': stored.mimeType,
+              'Content-Length': String(stored.sizeBytes),
+              ...(stored.fileName ? { 'Content-Disposition': `inline; filename="${stored.fileName}"` } : {}),
+              ...corsHeaders,
+            },
+          });
+        }
+        if (method === 'DELETE') {
+          const deleted = this.ctx.blobStore.deleteBlob(hash);
+          return this.json({ success: deleted }, 200, corsHeaders);
+        }
+      }
       return this.notFound(`Cannot ${method} ${path}`, corsHeaders);
     } catch (err) {
       return this.json({

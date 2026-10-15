@@ -58,4 +58,14 @@ CREATE TABLE IF NOT EXISTS history_policy (
     cleanup_enabled INTEGER NOT NULL DEFAULT 1,
     updated_at INTEGER NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS blob_metadata (
+    hash TEXT PRIMARY KEY,
+    mime_type TEXT NOT NULL,
+    file_name TEXT,
+    size_bytes INTEGER NOT NULL,
+    created_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_blob_created ON blob_metadata(created_at DESC);
 `;

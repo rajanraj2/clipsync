@@ -6,3 +6,4 @@ export * from './adapters/in-memory-adapter.js';
 export * from './adapters/macos-adapter.js';
 export * from './adapters/linux-adapter.js';
 export * from './config-sync-manager.js';
+export * from './transfer-engine.js';

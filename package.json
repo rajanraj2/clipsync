@@ -4,9 +4,9 @@
   "private": true,
   "description": "Universal clipboard, synchronization and content sharing platform",
   "scripts": {
-    "build": "pnpm -r run build",
+    "build": "tsc -b packages/shared-types packages/protocol-schema packages/sync-engine",
     "test": "bun test packages/*/tests",
-    "typecheck": "pnpm -r run typecheck"
+    "typecheck": "tsc -b packages/shared-types packages/protocol-schema packages/sync-engine"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",

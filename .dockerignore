@@ -1,0 +1,12 @@
+node_modules
+.next
+out
+build
+.gradle
+.git
+.pnpm-store
+*.log
+release-distribution
+release-assets
+apps/android
+apps/web

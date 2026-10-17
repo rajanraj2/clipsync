@@ -22,7 +22,7 @@ describe('ClipSync CLI', () => {
   it('prints version information', async () => {
     const result = await executeCli({ args: ['--version'] });
     expect(result.exitCode).toBe(0);
-    expect(result.output).toContain('ClipSync CLI v0.1.1');
+    expect(result.output).toContain('ClipSync CLI v0.1.2');
     expect(result.output).toContain('Protocol v2.0');
   });
 

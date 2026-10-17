@@ -1,46 +1,38 @@
 #!/usr/bin/env bash
 set -e
 
-VERSION="${1:-0.1.2}"
+VERSION="${1:-0.1.3}"
 OUTPUT_DIR="${2:-release-assets}"
 DMG_PATH="${OUTPUT_DIR}/ClipSync-macOS.dmg"
 
-echo "==> Building ClipSync macOS Drag-and-Drop DMG v${VERSION}..."
+echo "==> Building ClipSync native macOS App & Drag-and-Drop DMG v${VERSION}..."
 
 rm -rf /tmp/clipsync-dmg-source
 mkdir -p /tmp/clipsync-dmg-source/ClipSync.app/Contents/MacOS
 mkdir -p /tmp/clipsync-dmg-source/ClipSync.app/Contents/Resources
 mkdir -p "${OUTPUT_DIR}"
 
-# 1. Compile native Mach-O binary launcher that invokes Node cleanly
-cat << 'EOF' > /tmp/clipsync_launcher.c
-#include <unistd.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <limits.h>
-#include <mach-o/dyld.h>
-#include <libgen.h>
-
-int main(int argc, char *argv[]) {
-    char path[PATH_MAX];
-    uint32_t size = sizeof(path);
-    if (_NSGetExecutablePath(path, &size) != 0) {
-        return 1;
+# 1. Compile native Cocoa / AppKit menu bar application
+if [ -f "apps/desktop/src-native/main.m" ]; then
+  clang -framework Cocoa -O2 apps/desktop/src-native/main.m -o /tmp/clipsync-dmg-source/ClipSync.app/Contents/MacOS/ClipSync
+else
+  # Fallback to minimal launcher
+  cat << 'EOF' > /tmp/fallback.m
+#import <Cocoa/Cocoa.h>
+int main(int argc, const char * argv[]) {
+    @autoreleasepool {
+        [[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:@"https://rajanraj2.github.io/clipsync/"]];
     }
-    char *dir = dirname(path);
-    char script[PATH_MAX];
-    snprintf(script, sizeof(script), "%s/clipsync.js", dir);
-
-    char *args[] = {"/usr/bin/env", "node", script, "daemon", NULL};
-    execvp(args[0], args);
     return 0;
 }
 EOF
+  clang -framework Cocoa -O2 /tmp/fallback.m -o /tmp/clipsync-dmg-source/ClipSync.app/Contents/MacOS/ClipSync
+  rm -f /tmp/fallback.m
+fi
 
-clang -O2 /tmp/clipsync_launcher.c -o /tmp/clipsync-dmg-source/ClipSync.app/Contents/MacOS/ClipSync
-rm -f /tmp/clipsync_launcher.c
+chmod +x /tmp/clipsync-dmg-source/ClipSync.app/Contents/MacOS/ClipSync
 
-# 2. Copy CLI javascript payload alongside the Mach-O binary
+# 2. Copy CLI javascript payload alongside the binary
 if [ -f "packages/cli/bin/clipsync.js" ]; then
   cp packages/cli/bin/clipsync.js /tmp/clipsync-dmg-source/ClipSync.app/Contents/MacOS/clipsync.js
   chmod +x /tmp/clipsync-dmg-source/ClipSync.app/Contents/MacOS/clipsync.js
@@ -57,6 +49,7 @@ if [ -f "apps/desktop/resources/AppIcon.icns" ]; then
   cp apps/desktop/resources/AppIcon.icns /tmp/clipsync-dmg-source/ClipSync.app/Contents/Resources/AppIcon.icns
 fi
 
+# 5. Write valid Apple Info.plist
 cat << EOF > /tmp/clipsync-dmg-source/ClipSync.app/Contents/Info.plist
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -86,14 +79,14 @@ cat << EOF > /tmp/clipsync-dmg-source/ClipSync.app/Contents/Info.plist
 </plist>
 EOF
 
-# 5. Ad-hoc codesign binary and whole .app bundle
+# 6. Ad-hoc codesign binary and whole .app bundle
 codesign -s - --force --deep /tmp/clipsync-dmg-source/ClipSync.app/Contents/MacOS/ClipSync || true
 codesign -s - --force --deep /tmp/clipsync-dmg-source/ClipSync.app || true
 
-# 6. Create symbolic link to /Applications
+# 7. Create symbolic link to /Applications
 ln -s /Applications /tmp/clipsync-dmg-source/Applications
 
-# 7. Package DMG with UDZO compression
+# 8. Package DMG with UDZO compression
 rm -f "${DMG_PATH}"
 hdiutil create -volname "ClipSync" -srcfolder /tmp/clipsync-dmg-source -ov -format UDZO "${DMG_PATH}"
 

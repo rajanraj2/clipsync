@@ -1,4 +1,4 @@
-import { StandaloneRelayService } from '../src/index.js';
+import { StandaloneRelayService } from './index.js';
 
 const port = Number(process.env.PORT || 4001);
 const service = new StandaloneRelayService({ port });

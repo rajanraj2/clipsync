@@ -144,6 +144,27 @@ export default function DownloadsPage() {
           </div>
         ))}
       </div>
+
+      {/* macOS Gatekeeper Guidance Banner */}
+      <div style={{ marginTop: '32px', padding: '20px 24px', background: '#1e293b', border: '1px solid #334155', borderRadius: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+          <span style={{ fontSize: '18px' }}>💡</span>
+          <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 600, color: '#f8fafc' }}>
+            First-time macOS Opening Note (Gatekeeper)
+          </h4>
+        </div>
+        <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#94a3b8', lineHeight: 1.5 }}>
+          Because ClipSync is an open-source binary distributed outside the Mac App Store, macOS shows a standard security alert on first launch.
+        </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px', color: '#cbd5e1' }}>
+          <div>
+            <strong>Method A (Finder):</strong> Right-click (or Control-click) <code>ClipSync.app</code> in your Applications folder and select <strong>Open</strong>, then click <strong>Open Anyway</strong>.
+          </div>
+          <div>
+            <strong>Method B (Terminal):</strong> Run <code>xattr -cr /Applications/ClipSync.app</code> to clear the quarantine flag in one step.
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

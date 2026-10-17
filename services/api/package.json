@@ -1,6 +1,6 @@
 {
   "name": "@clipsync/api",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "ClipSync REST and WebSocket backend application API service",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

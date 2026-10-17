@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-
+import { toAppUrl } from '../../services/url-helper';
 export default function DownloadsPage() {
   const [copiedCmd, setCopiedCmd] = useState<string | null>(null);
 
@@ -19,7 +19,7 @@ export default function DownloadsPage() {
       desc: 'Native macOS menu-bar app with system-wide pasteboard hooks and background synchronization.',
       primaryBtn: {
         text: 'Download .DMG (macOS)',
-        url: 'https://github.com/rajanraj2/clipsync/releases/latest/download/ClipSync-macOS.dmg',
+        url: 'https://github.com/rajanraj2/clipsync/releases/download/v0.1.1/ClipSync-macOS.dmg',
       },
       cliAlt: 'brew install rajanraj2/tap/clipsync',
       cliLabel: 'brew',
@@ -31,7 +31,7 @@ export default function DownloadsPage() {
       desc: 'Native Android app featuring Jetpack Compose Material 3 UI, foreground service, and Sharesheet integration.',
       primaryBtn: {
         text: 'Download .APK (Android)',
-        url: 'https://github.com/rajanraj2/clipsync/releases/latest/download/ClipSync-Android.apk',
+        url: 'https://github.com/rajanraj2/clipsync/releases/download/v0.1.1/ClipSync-Android.apk',
       },
       cliAlt: 'adb install ClipSync-Android.apk',
       cliLabel: 'adb',
@@ -43,7 +43,7 @@ export default function DownloadsPage() {
       desc: 'Zero-install responsive web dashboard. Works in Chrome, Safari, Firefox, and Edge with offline caching.',
       primaryBtn: {
         text: 'Open Web Dashboard',
-        url: '/dashboard',
+        url: toAppUrl('/dashboard'),
       },
       cliAlt: 'PWA Offline Ready • Protocol v2.0',
       cliLabel: 'web',
@@ -92,7 +92,7 @@ export default function DownloadsPage() {
                 <span style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', color: ch.badgeColor }}>
                   {ch.tag}
                 </span>
-                <span style={{ fontSize: '12px', color: '#64748b' }}>Release v0.1.0</span>
+                <span style={{ fontSize: '12px', color: '#64748b' }}>Release v0.1.1</span>
               </div>
               <h3 style={{ margin: '0 0 8px', fontSize: '20px', fontWeight: 700 }}>{ch.title}</h3>
               <p style={{ margin: 0, color: '#94a3b8', fontSize: '14px', lineHeight: 1.5 }}>{ch.desc}</p>

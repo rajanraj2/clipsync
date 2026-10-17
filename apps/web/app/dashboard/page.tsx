@@ -13,6 +13,7 @@ import {
   WebUserSession,
 } from '../../services/web-storage';
 import { readBrowserClipboard, writeBrowserClipboard } from '../../services/clipboard-diagnostics';
+import { toAppUrl } from '../../services/url-helper';
 
 export default function DashboardPage() {
   const [session, setSession] = useState<WebUserSession | null>(null);
@@ -106,7 +107,7 @@ export default function DashboardPage() {
               📥 Paste OS Clipboard
             </button>
             <a
-              href="/downloads"
+              href={toAppUrl('/downloads')}
               style={{
                 padding: '8px 16px',
                 borderRadius: '8px',
@@ -259,7 +260,7 @@ export default function DashboardPage() {
       <div style={{ background: '#1e293b', borderRadius: '12px', border: '1px solid #334155', padding: '24px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 600 }}>Recent Clipboard Activity</h3>
-          <a href="/history" style={{ fontSize: '13px', color: '#38bdf8', textDecoration: 'none' }}>View All History →</a>
+          <a href={toAppUrl('/history')} style={{ fontSize: '13px', color: '#38bdf8', textDecoration: 'none' }}>View All History →</a>
         </div>
 
         {clips.length === 0 ? (

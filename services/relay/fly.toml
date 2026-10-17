@@ -1,4 +1,4 @@
-app = "clipsync-relay"
+app = "clipsync-relay-raxan"
 primary_region = "iad"
 
 [build]

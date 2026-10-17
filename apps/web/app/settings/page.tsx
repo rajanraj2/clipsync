@@ -2,9 +2,11 @@
 
 import React, { useEffect, useState } from 'react';
 import {
+  getOrCreateWebSession,
   getSyncActiveState,
   loadHistoryPolicy,
   saveHistoryPolicy,
+  saveWebSession,
   setSyncActiveState,
 } from '../../services/web-storage';
 
@@ -18,9 +20,14 @@ export default function SettingsPage() {
   const [ignoreTokens, setIgnoreTokens] = useState(true);
   const [retentionDays, setRetentionDays] = useState('30');
   const [maxStorageMb, setMaxStorageMb] = useState(1024);
+  const [relayUrl, setRelayUrl] = useState('https://clipsync-relay-raxan.fly.dev');
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
+    const session = getOrCreateWebSession();
+    if (session.relayUrl) {
+      setRelayUrl(session.relayUrl);
+    }
     setAutoSync(getSyncActiveState());
     const policy = loadHistoryPolicy();
     if (policy.unlimitedRetention) {
@@ -33,6 +40,10 @@ export default function SettingsPage() {
 
   const handleSave = () => {
     setSyncActiveState(autoSync);
+
+    const session = getOrCreateWebSession();
+    session.relayUrl = relayUrl.trim();
+    saveWebSession(session);
 
     const isUnlimited = retentionDays === 'unlimited';
     const days = isUnlimited ? null : Number(retentionDays);
@@ -179,6 +190,35 @@ export default function SettingsPage() {
           </div>
         </div>
 
+        {/* Section: Public Encrypted Relay Server */}
+        <div style={{ background: '#1e293b', padding: '24px', borderRadius: '12px', border: '1px solid #334155' }}>
+          <h3 style={{ margin: '0 0 8px', fontSize: '16px', fontWeight: 600 }}>Encrypted Relay Connection</h3>
+          <p style={{ margin: '0 0 16px', fontSize: '12px', color: '#94a3b8' }}>
+            Connects across firewalls and cellular networks when devices are not on the same local Wi-Fi.
+          </p>
+          <div>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '6px' }}>
+              Relay Server URL (HTTPS / WSS)
+            </label>
+            <input
+              type="text"
+              value={relayUrl}
+              onChange={(e) => setRelayUrl(e.target.value)}
+              placeholder="https://clipsync-relay-raxan.fly.dev"
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                borderRadius: '8px',
+                border: '1px solid #334155',
+                background: '#0f172a',
+                color: '#38bdf8',
+                fontFamily: 'monospace',
+                fontSize: '13px',
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
+        </div>
         {saved && (
           <div style={{ padding: '12px', background: '#064e3b', borderRadius: '8px', color: '#34d399', fontSize: '14px' }}>
             ✓ Configuration saved and applied!

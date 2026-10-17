@@ -1,37 +1,54 @@
 'use client';
 
-import React, { useState } from 'react';
-
-interface Clip {
-  id: string;
-  content: string;
-  contentType: string;
-  sourceDevice: string;
-  isPinned: boolean;
-  isFavourite: boolean;
-  createdAt: string;
-}
+import React, { useEffect, useState } from 'react';
+import {
+  clearAllWebClips,
+  deleteWebClip,
+  loadWebClips,
+  toggleFavWebClip,
+  togglePinWebClip,
+  WebClipItem,
+} from '../../services/web-storage';
+import { writeBrowserClipboard } from '../../services/clipboard-diagnostics';
 
 export default function HistoryPage() {
   const [search, setSearch] = useState('');
   const [selectedType, setSelectedType] = useState('all');
+  const [clips, setClips] = useState<WebClipItem[]>([]);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  const [clips, setClips] = useState<Clip[]>([
-    { id: '1', content: 'https://github.com/rajanraj2/clipsync', contentType: 'url', sourceDevice: 'MacBook Pro', isPinned: true, isFavourite: true, createdAt: '10m ago' },
-    { id: '2', content: 'pnpm --filter @clipsync/api run build', contentType: 'text', sourceDevice: 'ThinkPad X1', isPinned: false, isFavourite: false, createdAt: '25m ago' },
-    { id: '3', content: 'ssh zorax@ubuntu-dev.lan', contentType: 'text', sourceDevice: 'Ubuntu Workstation', isPinned: false, isFavourite: true, createdAt: '2h ago' },
-  ]);
+  useEffect(() => {
+    setClips(loadWebClips());
+  }, []);
 
-  const togglePin = (id: string) => {
-    setClips(clips.map((c) => (c.id === id ? { ...c, isPinned: !c.isPinned } : c)));
+  const handleCopy = async (id: string, text: string) => {
+    const res = await writeBrowserClipboard(text);
+    if (res.success) {
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    }
   };
 
-  const toggleFav = (id: string) => {
-    setClips(clips.map((c) => (c.id === id ? { ...c, isFavourite: !c.isFavourite } : c)));
+  const handleTogglePin = (id: string) => {
+    togglePinWebClip(id);
+    setClips(loadWebClips());
   };
 
-  const deleteItem = (id: string) => {
-    setClips(clips.filter((c) => c.id !== id));
+  const handleToggleFav = (id: string) => {
+    toggleFavWebClip(id);
+    setClips(loadWebClips());
+  };
+
+  const handleDelete = (id: string) => {
+    deleteWebClip(id);
+    setClips(loadWebClips());
+  };
+
+  const handleClearAll = () => {
+    if (confirm('Are you sure you want to clear your local clipboard history?')) {
+      clearAllWebClips();
+      setClips([]);
+    }
   };
 
   const filtered = clips.filter((c) => {
@@ -42,9 +59,30 @@ export default function HistoryPage() {
 
   return (
     <div>
-      <div style={{ marginBottom: '28px' }}>
-        <h1 style={{ margin: 0, fontSize: '28px', fontWeight: 700 }}>Clipboard History</h1>
-        <p style={{ margin: '6px 0 0', color: '#94a3b8', fontSize: '14px' }}>Browse, search, and manage historical synchronized items</p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px', flexWrap: 'wrap', gap: '16px' }}>
+        <div>
+          <h1 style={{ margin: 0, fontSize: '28px', fontWeight: 700 }}>Clipboard History</h1>
+          <p style={{ margin: '6px 0 0', color: '#94a3b8', fontSize: '14px' }}>
+            {clips.length} item(s) preserved in local browser storage
+          </p>
+        </div>
+        {clips.length > 0 && (
+          <button
+            onClick={handleClearAll}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '8px',
+              border: '1px solid #e11d48',
+              background: 'transparent',
+              color: '#fb7185',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: 600,
+            }}
+          >
+            Clear All History
+          </button>
+        )}
       </div>
 
       {/* Filters Bar */}
@@ -87,63 +125,105 @@ export default function HistoryPage() {
       </div>
 
       {/* Items List */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        {filtered.map((item) => (
-          <div
-            key={item.id}
-            style={{
-              padding: '16px 20px',
-              background: '#1e293b',
-              borderRadius: '10px',
-              border: item.isPinned ? '1px solid #38bdf8' : '1px solid #334155',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
-            <div style={{ flex: 1, marginRight: '16px' }}>
-              <div style={{ fontFamily: 'monospace', fontSize: '14px', color: '#f8fafc', wordBreak: 'break-all' }}>
-                {item.content}
+      {filtered.length === 0 ? (
+        <div style={{ background: '#1e293b', borderRadius: '12px', border: '1px solid #334155', padding: '48px', textAlign: 'center', color: '#64748b' }}>
+          {clips.length === 0
+            ? 'Your clipboard history is empty. Go to the Dashboard or Quick Share to copy or paste content.'
+            : 'No items match your filter criteria.'}
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {filtered.map((item) => (
+            <div
+              key={item.id}
+              style={{
+                padding: '16px 20px',
+                background: '#1e293b',
+                borderRadius: '10px',
+                border: item.isPinned ? '1px solid #38bdf8' : '1px solid #334155',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: '16px',
+              }}
+            >
+              <div style={{ flex: 1, overflow: 'hidden' }}>
+                <div style={{ fontFamily: 'monospace', fontSize: '14px', color: '#f8fafc', wordBreak: 'break-all', maxHeight: '72px', overflow: 'hidden' }}>
+                  {item.content}
+                </div>
+                <div style={{ display: 'flex', gap: '10px', fontSize: '12px', color: '#64748b', marginTop: '8px', flexWrap: 'wrap' }}>
+                  <span style={{ textTransform: 'uppercase', color: '#38bdf8', fontWeight: 600 }}>{item.contentType}</span>
+                  <span>•</span>
+                  <span>{item.sourceDeviceName}</span>
+                  <span>•</span>
+                  <span>{new Date(item.createdAt).toLocaleString()}</span>
+                  {item.isPinned && <span style={{ color: '#38bdf8', fontWeight: 600 }}>[Pinned]</span>}
+                </div>
               </div>
-              <div style={{ display: 'flex', gap: '10px', fontSize: '12px', color: '#64748b', marginTop: '8px' }}>
-                <span style={{ textTransform: 'uppercase', color: '#38bdf8', fontWeight: 600 }}>{item.contentType}</span>
-                <span>•</span>
-                <span>{item.sourceDevice}</span>
-                <span>•</span>
-                <span>{item.createdAt}</span>
-                {item.isPinned && <span style={{ color: '#38bdf8', fontWeight: 600 }}>[Pinned]</span>}
-              </div>
-            </div>
 
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button
-                onClick={() => navigator.clipboard.writeText(item.content)}
-                style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #475569', background: '#0f172a', color: '#f8fafc', cursor: 'pointer', fontSize: '12px' }}
-              >
-                Copy
-              </button>
-              <button
-                onClick={() => togglePin(item.id)}
-                style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #475569', background: item.isPinned ? '#0369a1' : '#0f172a', color: '#f8fafc', cursor: 'pointer', fontSize: '12px' }}
-              >
-                {item.isPinned ? 'Unpin' : 'Pin'}
-              </button>
-              <button
-                onClick={() => toggleFav(item.id)}
-                style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #475569', background: item.isFavourite ? '#eab308' : '#0f172a', color: item.isFavourite ? '#000' : '#f8fafc', cursor: 'pointer', fontSize: '12px' }}
-              >
-                {item.isFavourite ? '★ Starred' : '☆ Star'}
-              </button>
-              <button
-                onClick={() => deleteItem(item.id)}
-                style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #e11d48', background: 'transparent', color: '#fb7185', cursor: 'pointer', fontSize: '12px' }}
-              >
-                Delete
-              </button>
+              <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                <button
+                  onClick={() => handleCopy(item.id, item.content)}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    border: '1px solid #475569',
+                    background: copiedId === item.id ? '#0284c7' : '#0f172a',
+                    color: '#f8fafc',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                  }}
+                >
+                  {copiedId === item.id ? '✓ Copied' : 'Copy'}
+                </button>
+                <button
+                  onClick={() => handleTogglePin(item.id)}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    border: '1px solid #475569',
+                    background: item.isPinned ? '#0369a1' : '#0f172a',
+                    color: '#f8fafc',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                  }}
+                >
+                  {item.isPinned ? 'Unpin' : 'Pin'}
+                </button>
+                <button
+                  onClick={() => handleToggleFav(item.id)}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    border: '1px solid #475569',
+                    background: item.isFavourite ? '#eab308' : '#0f172a',
+                    color: item.isFavourite ? '#000' : '#f8fafc',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                  }}
+                >
+                  {item.isFavourite ? '★ Starred' : '☆ Star'}
+                </button>
+                <button
+                  onClick={() => handleDelete(item.id)}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    border: '1px solid #e11d48',
+                    background: 'transparent',
+                    color: '#fb7185',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                  }}
+                >
+                  Delete
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

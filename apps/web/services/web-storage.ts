@@ -85,7 +85,7 @@ function createDefaultSession(): WebUserSession {
     userName: 'Local User',
     currentDevice,
     createdAt: now,
-    relayUrl: 'https://relay.clipsync.dev',
+    relayUrl: 'https://clipsync-relay-raxan.fly.dev',
   };
 }
 

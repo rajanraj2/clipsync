@@ -12,13 +12,47 @@ mkdir -p /tmp/clipsync-dmg-source/ClipSync.app/Contents/MacOS
 mkdir -p /tmp/clipsync-dmg-source/ClipSync.app/Contents/Resources
 mkdir -p "${OUTPUT_DIR}"
 
-# Compile / copy CLI executable into the .app bundle
+# 1. Compile native Mach-O binary launcher that invokes Node cleanly
+cat << 'EOF' > /tmp/clipsync_launcher.c
+#include <unistd.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <limits.h>
+#include <mach-o/dyld.h>
+#include <libgen.h>
+
+int main(int argc, char *argv[]) {
+    char path[PATH_MAX];
+    uint32_t size = sizeof(path);
+    if (_NSGetExecutablePath(path, &size) != 0) {
+        return 1;
+    }
+    char *dir = dirname(path);
+    char script[PATH_MAX];
+    snprintf(script, sizeof(script), "%s/clipsync.js", dir);
+
+    char *args[] = {"/usr/bin/env", "node", script, "daemon", NULL};
+    execvp(args[0], args);
+    return 0;
+}
+EOF
+
+clang -O2 /tmp/clipsync_launcher.c -o /tmp/clipsync-dmg-source/ClipSync.app/Contents/MacOS/ClipSync
+rm -f /tmp/clipsync_launcher.c
+
+# 2. Copy CLI javascript payload alongside the Mach-O binary
 if [ -f "packages/cli/bin/clipsync.js" ]; then
-  cp packages/cli/bin/clipsync.js /tmp/clipsync-dmg-source/ClipSync.app/Contents/MacOS/ClipSync
-  chmod +x /tmp/clipsync-dmg-source/ClipSync.app/Contents/MacOS/ClipSync
+  cp packages/cli/bin/clipsync.js /tmp/clipsync-dmg-source/ClipSync.app/Contents/MacOS/clipsync.js
+  chmod +x /tmp/clipsync-dmg-source/ClipSync.app/Contents/MacOS/clipsync.js
 fi
 
-# Copy native ICNS and brand assets
+# 3. Copy compiled dist modules into .app bundle
+mkdir -p /tmp/clipsync-dmg-source/ClipSync.app/Contents/MacOS/dist
+if [ -d "packages/cli/dist" ]; then
+  cp -r packages/cli/dist/* /tmp/clipsync-dmg-source/ClipSync.app/Contents/MacOS/dist/
+fi
+
+# 4. Copy native AppIcon.icns
 if [ -f "apps/desktop/resources/AppIcon.icns" ]; then
   cp apps/desktop/resources/AppIcon.icns /tmp/clipsync-dmg-source/ClipSync.app/Contents/Resources/AppIcon.icns
 fi
@@ -52,11 +86,14 @@ cat << EOF > /tmp/clipsync-dmg-source/ClipSync.app/Contents/Info.plist
 </plist>
 EOF
 
-# CRITICAL: Create symbolic link to /Applications inside the root of the DMG volume!
-# This gives the classic macOS installer window: [ ClipSync.app ]  --->  [ Applications ]
+# 5. Ad-hoc codesign binary and whole .app bundle
+codesign -s - --force --deep /tmp/clipsync-dmg-source/ClipSync.app/Contents/MacOS/ClipSync || true
+codesign -s - --force --deep /tmp/clipsync-dmg-source/ClipSync.app || true
+
+# 6. Create symbolic link to /Applications
 ln -s /Applications /tmp/clipsync-dmg-source/Applications
 
-# Package DMG with UDZO compression and volume name
+# 7. Package DMG with UDZO compression
 rm -f "${DMG_PATH}"
 hdiutil create -volname "ClipSync" -srcfolder /tmp/clipsync-dmg-source -ov -format UDZO "${DMG_PATH}"
 

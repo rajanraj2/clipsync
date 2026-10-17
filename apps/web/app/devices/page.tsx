@@ -1,37 +1,69 @@
 'use client';
 
-import React, { useState } from 'react';
-
-interface Device {
-  id: string;
-  name: string;
-  platform: string;
-  status: 'online' | 'offline';
-  appVersion: string;
-  lastSeen: string;
-}
+import React, { useEffect, useState } from 'react';
+import {
+  getOrCreateWebSession,
+  loadPairedDevices,
+  pairNewDevice,
+  removePairedDevice,
+  WebUserSession,
+} from '../../services/web-storage';
+import { DeviceMetadata } from '@clipsync/shared-types';
 
 export default function DevicesPage() {
-  const [devices, setDevices] = useState<Device[]>([
-    { id: 'mac-1', name: "Rajan's MacBook Pro", platform: 'macOS', status: 'online', appVersion: '0.1.0', lastSeen: 'Just now' },
-    { id: 'win-1', name: "ThinkPad X1 Carbon", platform: 'Windows', status: 'online', appVersion: '0.1.0', lastSeen: '5m ago' },
-    { id: 'lin-1', name: "Ubuntu Workstation", platform: 'Ubuntu', status: 'offline', appVersion: '0.1.0', lastSeen: '2h ago' },
-  ]);
-
+  const [session, setSession] = useState<WebUserSession | null>(null);
+  const [devices, setDevices] = useState<DeviceMetadata[]>([]);
   const [showPairModal, setShowPairModal] = useState(false);
+  const [pairName, setPairName] = useState('');
+  const [pairPlatform, setPairPlatform] = useState<DeviceMetadata['platform']>('macos');
+  const [generatedPairCode, setGeneratedPairCode] = useState('SYNC-7749');
 
-  const revokeDevice = (id: string) => {
-    if (confirm('Are you sure you want to revoke this device? It will stop synchronizing clipboard items.')) {
-      setDevices(devices.filter((d) => d.id !== id));
+  useEffect(() => {
+    setSession(getOrCreateWebSession());
+    setDevices(loadPairedDevices());
+    setGeneratedPairCode(`SYNC-${Math.floor(1000 + Math.random() * 9000)}`);
+  }, []);
+
+  const handleRevoke = (id: string) => {
+    if (confirm('Revoke access for this device? It will be disconnected from clipboard synchronization.')) {
+      removePairedDevice(id);
+      setDevices(loadPairedDevices());
     }
+  };
+
+  const handleAddManualDevice = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pairName.trim()) return;
+
+    pairNewDevice({
+      id: `${pairPlatform}-${Math.random().toString(36).substring(2, 7)}`,
+      name: pairName.trim(),
+      platform: pairPlatform,
+      appVersion: '0.1.0',
+      status: 'online',
+      trustLevel: 'paired',
+      capabilities: {
+        backgroundClipboardMonitoring: pairPlatform !== 'web',
+        osClipboardHook: ['macos', 'windows'].includes(pairPlatform),
+        hybridCapture: pairPlatform === 'android',
+        directFileAccess: pairPlatform !== 'web',
+        browserRestricted: pairPlatform === 'web',
+      },
+    });
+
+    setDevices(loadPairedDevices());
+    setPairName('');
+    setShowPairModal(false);
   };
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h1 style={{ margin: 0, fontSize: '28px', fontWeight: 700 }}>Device Management</h1>
-          <p style={{ margin: '6px 0 0', color: '#94a3b8', fontSize: '14px' }}>Authorize, configure, and monitor connected native ClipSync agents</p>
+          <p style={{ margin: '6px 0 0', color: '#94a3b8', fontSize: '14px' }}>
+            Authorized devices connected to your ClipSync cluster
+          </p>
         </div>
         <button
           onClick={() => setShowPairModal(true)}
@@ -50,7 +82,48 @@ export default function DevicesPage() {
         </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+        {/* Current Browser Card */}
+        {session && (
+          <div
+            style={{
+              padding: '24px',
+              background: '#1e293b',
+              borderRadius: '12px',
+              border: '2px solid #38bdf8',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+            }}
+          >
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <span style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', color: '#38bdf8' }}>
+                  THIS DEVICE (WEB)
+                </span>
+                <span style={{
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  padding: '2px 8px',
+                  borderRadius: '12px',
+                  background: '#064e3b',
+                  color: '#34d399',
+                }}>
+                  Online • Active
+                </span>
+              </div>
+              <h3 style={{ margin: '0 0 6px', fontSize: '18px', fontWeight: 600 }}>{session.currentDevice.name}</h3>
+              <p style={{ margin: 0, fontSize: '12px', color: '#94a3b8' }}>
+                ID: {session.currentDevice.id}
+              </p>
+            </div>
+            <div style={{ marginTop: '20px', fontSize: '12px', color: '#64748b', borderTop: '1px solid #334155', paddingTop: '12px' }}>
+              Web context: Manual copy/paste & PWA offline cache enabled
+            </div>
+          </div>
+        )}
+
+        {/* Paired Remote Devices */}
         {devices.map((dev) => (
           <div
             key={dev.id}
@@ -79,13 +152,15 @@ export default function DevicesPage() {
                 </span>
               </div>
               <h3 style={{ margin: '0 0 6px', fontSize: '18px', fontWeight: 600 }}>{dev.name}</h3>
-              <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>App v{dev.appVersion} • Seen {dev.lastSeen}</p>
+              <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>
+                App v{dev.appVersion} • Registered {new Date(dev.registeredAt).toLocaleDateString()}
+              </p>
             </div>
 
-            <div style={{ marginTop: '24px', borderTop: '1px solid #334155', paddingTop: '16px', display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: '12px', color: '#94a3b8', fontFamily: 'monospace' }}>ID: {dev.id}</span>
+            <div style={{ marginTop: '24px', borderTop: '1px solid #334155', paddingTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '12px', color: '#94a3b8', fontFamily: 'monospace' }}>{dev.id}</span>
               <button
-                onClick={() => revokeDevice(dev.id)}
+                onClick={() => handleRevoke(dev.id)}
                 style={{
                   background: 'transparent',
                   border: 'none',
@@ -110,62 +185,99 @@ export default function DevicesPage() {
           left: 0,
           right: 0,
           bottom: 0,
-          background: 'rgba(0,0,0,0.7)',
+          background: 'rgba(0,0,0,0.75)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 100,
+          padding: '20px',
         }}>
           <div style={{
             background: '#1e293b',
             borderRadius: '16px',
             border: '1px solid #334155',
-            padding: '32px',
-            maxWidth: '420px',
+            padding: '28px',
+            maxWidth: '440px',
             width: '100%',
-            textAlign: 'center',
           }}>
-            <h3 style={{ margin: '0 0 12px', fontSize: '20px', fontWeight: 700 }}>Pair Device</h3>
-            <p style={{ margin: '0 0 24px', fontSize: '14px', color: '#94a3b8' }}>
-              Open ClipSync on your desktop or Android phone and scan this pairing code.
-            </p>
-
-            <div style={{
-              width: '180px',
-              height: '180px',
-              margin: '0 auto 20px',
-              background: '#0f172a',
-              borderRadius: '12px',
-              border: '2px dashed #38bdf8',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '12px',
-              color: '#38bdf8',
-              fontWeight: 600,
-            }}>
-              [QR CODE PLACEHOLDER]
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ margin: 0, fontSize: '20px', fontWeight: 700 }}>Pair New Device</h3>
+              <button onClick={() => setShowPairModal(false)} style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '18px' }}>✕</button>
             </div>
 
-            <div style={{ fontFamily: 'monospace', fontSize: '18px', fontWeight: 700, color: '#f8fafc', letterSpacing: '4px', marginBottom: '24px' }}>
-              SYNC-8492
+            <div style={{ textAlign: 'center', marginBottom: '20px', padding: '16px', background: '#0f172a', borderRadius: '12px', border: '1px solid #334155' }}>
+              <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '4px' }}>Cluster Pairing Code</div>
+              <div style={{ fontSize: '24px', fontWeight: 800, color: '#38bdf8', letterSpacing: '3px', fontFamily: 'monospace' }}>
+                {generatedPairCode}
+              </div>
+              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '6px' }}>
+                Enter this code on your native app or scan from the camera
+              </div>
             </div>
 
-            <button
-              onClick={() => setShowPairModal(false)}
-              style={{
-                width: '100%',
-                padding: '10px',
-                borderRadius: '8px',
-                border: 'none',
-                background: '#334155',
-                color: '#f8fafc',
-                cursor: 'pointer',
-                fontWeight: 600,
-              }}
-            >
-              Done
-            </button>
+            <form onSubmit={handleAddManualDevice} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>Device Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Work MacBook Pro, Pixel 8..."
+                  value={pairName}
+                  onChange={(e) => setPairName(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #334155',
+                    background: '#0f172a',
+                    color: '#f8fafc',
+                    fontSize: '14px',
+                    boxSizing: 'border-box',
+                  }}
+                  required
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>Platform</label>
+                <select
+                  value={pairPlatform}
+                  onChange={(e) => setPairPlatform(e.target.value as DeviceMetadata['platform'])}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #334155',
+                    background: '#0f172a',
+                    color: '#f8fafc',
+                    fontSize: '14px',
+                    boxSizing: 'border-box',
+                  }}
+                >
+                  <option value="macos">macOS Desktop</option>
+                  <option value="windows">Windows Desktop</option>
+                  <option value="linux">Ubuntu / Linux</option>
+                  <option value="android">Android Phone</option>
+                  <option value="web">Another Browser</option>
+                </select>
+              </div>
+
+              <button
+                type="submit"
+                style={{
+                  marginTop: '8px',
+                  padding: '12px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: '#0284c7',
+                  color: '#fff',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                }}
+              >
+                Confirm Pairing
+              </button>
+            </form>
           </div>
         </div>
       )}

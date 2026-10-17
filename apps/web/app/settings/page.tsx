@@ -1,6 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import {
+  getSyncActiveState,
+  loadHistoryPolicy,
+  saveHistoryPolicy,
+  setSyncActiveState,
+} from '../../services/web-storage';
 
 export default function SettingsPage() {
   const [autoSync, setAutoSync] = useState(true);
@@ -14,9 +20,35 @@ export default function SettingsPage() {
   const [maxStorageMb, setMaxStorageMb] = useState(1024);
   const [saved, setSaved] = useState(false);
 
+  useEffect(() => {
+    setAutoSync(getSyncActiveState());
+    const policy = loadHistoryPolicy();
+    if (policy.unlimitedRetention) {
+      setRetentionDays('unlimited');
+    } else if (policy.retentionDays) {
+      setRetentionDays(String(policy.retentionDays));
+    }
+    setMaxStorageMb(Math.round(policy.maxStorageBytes / (1024 * 1024)));
+  }, []);
+
   const handleSave = () => {
+    setSyncActiveState(autoSync);
+
+    const isUnlimited = retentionDays === 'unlimited';
+    const days = isUnlimited ? null : Number(retentionDays);
+
+    saveHistoryPolicy({
+      id: 'custom',
+      retentionDays: days,
+      unlimitedRetention: isUnlimited,
+      maxItems: 5000,
+      maxStorageBytes: maxStorageMb * 1024 * 1024,
+      cleanupEnabled: true,
+      updatedAt: Date.now(),
+    });
+
     setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    setTimeout(() => setSaved(false), 2500);
   };
 
   return (
@@ -149,7 +181,7 @@ export default function SettingsPage() {
 
         {saved && (
           <div style={{ padding: '12px', background: '#064e3b', borderRadius: '8px', color: '#34d399', fontSize: '14px' }}>
-            ✓ Configuration saved and propagated to authorized devices!
+            ✓ Configuration saved and applied!
           </div>
         )}
 

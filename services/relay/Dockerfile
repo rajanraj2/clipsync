@@ -9,7 +9,7 @@ COPY packages/ ./packages/
 COPY services/ ./services/
 COPY apps/ ./apps/
 
-RUN pnpm install --frozen-lockfile=false
+RUN pnpm install --no-frozen-lockfile
 RUN pnpm run build
 
 FROM node:22-alpine AS runner

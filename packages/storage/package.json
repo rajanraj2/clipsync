@@ -1,6 +1,6 @@
 {
   "name": "@clipsync/storage",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Local SQLite storage, full-text history search, and configurable retention for ClipSync",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

@@ -1,6 +1,6 @@
 {
   "name": "@clipsync/cli",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Cross-platform command line interface for ClipSync clipboard synchronization",
   "bin": {
     "clipsync": "./bin/clipsync.js"

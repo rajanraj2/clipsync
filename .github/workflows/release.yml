@@ -9,7 +9,7 @@ on:
       tag:
         description: 'Version tag (e.g. v0.1.0)'
         required: false
-        default: 'v0.1.1'
+        default: 'v0.1.2'
 
 permissions:
   contents: write
@@ -36,7 +36,7 @@ jobs:
           else
             TAG="${GITHUB_REF#refs/tags/}"
           fi
-          TAG="${TAG:-v0.1.1}"
+          TAG="${TAG:-v0.1.2}"
           CLEAN="${TAG#v}"
           echo "tag_name=$TAG" >> $GITHUB_OUTPUT
           echo "clean_version=$CLEAN" >> $GITHUB_OUTPUT
@@ -95,40 +95,10 @@ jobs:
           pnpm install --no-frozen-lockfile
           pnpm run build
 
-      - name: Package macOS DMG
+      - name: Package macOS DMG with Applications drag-and-drop symlink
         run: |
-          mkdir -p dmg-source release-assets
-          # Create macOS App bundle structure
-          mkdir -p dmg-source/ClipSync.app/Contents/MacOS
-          mkdir -p dmg-source/ClipSync.app/Contents/Resources
-          
-          # Copy executables and resources
-          cp packages/cli/bin/clipsync.js dmg-source/ClipSync.app/Contents/MacOS/ClipSync
-          chmod +x dmg-source/ClipSync.app/Contents/MacOS/ClipSync
-          cp apps/web/public/icon.svg dmg-source/ClipSync.app/Contents/Resources/
-          
-          cat << 'EOF' > dmg-source/ClipSync.app/Contents/Info.plist
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>CFBundleExecutable</key>
-              <string>ClipSync</string>
-              <key>CFBundleIdentifier</key>
-              <string>dev.clipsync.desktop</string>
-              <key>CFBundleName</key>
-              <string>ClipSync</string>
-              <key>CFBundlePackageType</key>
-              <string>APPL</string>
-              <key>CFBundleShortVersionString</key>
-              <string>${{ needs.compute_version.outputs.clean_version }}</string>
-          </dict>
-          </plist>
-          EOF
-
-          # Create DMG
-          hdiutil create -volname "ClipSync" -srcfolder dmg-source -ov -format UDZO release-assets/ClipSync-macOS.dmg
-
+          chmod +x scripts/build-dmg.sh
+          ./scripts/build-dmg.sh "${{ needs.compute_version.outputs.clean_version }}" release-assets
       - name: Upload macOS DMG Artifact
         uses: actions/upload-artifact@v4
         with:

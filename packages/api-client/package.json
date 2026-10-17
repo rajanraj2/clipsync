@@ -1,6 +1,6 @@
 {
   "name": "@clipsync/api-client",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Type-safe isomorphic HTTP and WebSocket client for ClipSync API",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

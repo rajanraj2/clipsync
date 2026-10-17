@@ -9,7 +9,7 @@ on:
       tag:
         description: 'Version tag (e.g. v0.1.0)'
         required: false
-        default: 'v0.1.0'
+        default: 'v0.1.1'
 
 permissions:
   contents: write
@@ -36,7 +36,7 @@ jobs:
           else
             TAG="${GITHUB_REF#refs/tags/}"
           fi
-          TAG="${TAG:-v0.1.0}"
+          TAG="${TAG:-v0.1.1}"
           CLEAN="${TAG#v}"
           echo "tag_name=$TAG" >> $GITHUB_OUTPUT
           echo "clean_version=$CLEAN" >> $GITHUB_OUTPUT

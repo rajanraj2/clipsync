@@ -100,7 +100,7 @@ export async function executeCli(options: CliExecutionOptions): Promise<CliComma
     case 'version':
     case '-v':
     case '--version': {
-      return { exitCode: 0, output: 'ClipSync CLI v0.1.0 (Protocol v2.0)' };
+      return { exitCode: 0, output: 'ClipSync CLI v0.1.1 (Protocol v2.0)' };
     }
 
     case 'help':

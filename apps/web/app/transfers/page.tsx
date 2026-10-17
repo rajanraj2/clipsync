@@ -8,6 +8,7 @@ import {
   WebUserSession,
 } from '../../services/web-storage';
 import { DeviceMetadata } from '@clipsync/shared-types';
+import { toAppUrl } from '../../services/url-helper';
 
 export default function TransfersPage() {
   const [session, setSession] = useState<WebUserSession | null>(null);
@@ -94,7 +95,7 @@ export default function TransfersPage() {
 
           {devices.length === 0 ? (
             <div style={{ padding: '16px', background: '#0f172a', borderRadius: '8px', border: '1px solid #334155', fontSize: '13px', color: '#94a3b8', marginBottom: '20px' }}>
-              No other devices paired yet. Content will be saved to this browser and synced when devices are added in <a href="/devices" style={{ color: '#38bdf8' }}>Device Management</a>.
+              No other devices paired yet. Content will be saved to this browser and synced when devices are added in <a href={toAppUrl('/devices')} style={{ color: '#38bdf8' }}>Device Management</a>.
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
